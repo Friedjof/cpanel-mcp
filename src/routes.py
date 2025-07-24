@@ -1,4 +1,4 @@
-"""MCP tool routes for cPanel email management."""
+"""MCP tool routes for cPanel email and DNS management."""
 
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ class CpanelRoutes:
         """Register all MCP tools."""
         self._register_email_account_tools()
         self._register_email_forwarder_tools()
+        self._register_dns_management_tools()
 
     def _register_email_account_tools(self) -> None:
         """Register email account management tools."""
@@ -183,6 +184,104 @@ class CpanelRoutes:
             """
             try:
                 return self.api.list_email_forwarders(domain)
+            except CpanelAPIError as e:
+                return {"error": str(e)}
+            except Exception as e:
+                return {"error": f"Unexpected error: {str(e)}"}
+
+    def _register_dns_management_tools(self) -> None:
+        """Register DNS management tools."""
+        
+        @self.mcp.tool()
+        def get_dns_records(domain: str) -> Dict[str, Any]:
+            """Get all DNS records for a domain.
+
+            Args:
+                domain: The domain to get DNS records for (e.g., "example.com")
+
+            Returns:
+                dict: The JSON response from the WHM API containing all DNS records with line numbers
+            """
+            try:
+                return self.api.get_dns_records(domain)
+            except CpanelAPIError as e:
+                return {"error": str(e)}
+            except Exception as e:
+                return {"error": f"Unexpected error: {str(e)}"}
+
+        @self.mcp.tool()
+        def add_dns_record(
+            domain: str, 
+            name: str, 
+            record_type: str, 
+            address: str, 
+            ttl: int = 3600, 
+            record_class: str = "IN"
+        ) -> Dict[str, Any]:
+            """Add a new DNS record to a domain.
+
+            Args:
+                domain: The domain to add the record to (e.g., "example.com")
+                name: The record name (e.g., "app.example.com" or "www")
+                record_type: The DNS record type (A, AAAA, CNAME, MX, TXT, etc.)
+                address: The record value/address (e.g., IP address for A record)
+                ttl: Time to live in seconds (default: 3600)
+                record_class: DNS class (default: "IN")
+
+            Returns:
+                dict: The JSON response from the WHM API
+            """
+            try:
+                return self.api.add_dns_record(domain, name, record_type, address, ttl, record_class)
+            except CpanelAPIError as e:
+                return {"error": str(e)}
+            except Exception as e:
+                return {"error": f"Unexpected error: {str(e)}"}
+
+        @self.mcp.tool()
+        def edit_dns_record(
+            domain: str, 
+            line: int, 
+            name: str, 
+            record_type: str, 
+            address: str, 
+            ttl: int = 3600, 
+            record_class: str = "IN"
+        ) -> Dict[str, Any]:
+            """Edit an existing DNS record.
+
+            Args:
+                domain: The domain containing the record (e.g., "example.com")
+                line: The line number of the record to edit (from get_dns_records)
+                name: The new record name
+                record_type: The new DNS record type (A, AAAA, CNAME, MX, TXT, etc.)
+                address: The new record value/address
+                ttl: Time to live in seconds (default: 3600)
+                record_class: DNS class (default: "IN")
+
+            Returns:
+                dict: The JSON response from the WHM API
+            """
+            try:
+                return self.api.edit_dns_record(domain, line, name, record_type, address, ttl, record_class)
+            except CpanelAPIError as e:
+                return {"error": str(e)}
+            except Exception as e:
+                return {"error": f"Unexpected error: {str(e)}"}
+
+        @self.mcp.tool()
+        def delete_dns_record(domain: str, line: int) -> Dict[str, Any]:
+            """Delete a DNS record from a domain.
+
+            Args:
+                domain: The domain containing the record (e.g., "example.com")
+                line: The line number of the record to delete (from get_dns_records)
+
+            Returns:
+                dict: The JSON response from the WHM API
+            """
+            try:
+                return self.api.delete_dns_record(domain, line)
             except CpanelAPIError as e:
                 return {"error": str(e)}
             except Exception as e:

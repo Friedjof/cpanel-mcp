@@ -34,8 +34,7 @@ def initialize_server() -> None:
 def run_server() -> None:
     """Run the server."""
     initialize_server()
-    mcp.run()
-
+    mcp.run('sse', 'localhost:8000')
 
 if __name__ == "__main__":
     run_server()
